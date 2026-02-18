@@ -34,7 +34,6 @@ form.addEventListener('submit', async event => {
   page = 1;
   hideLoadMoreButton();
   showLoader();
-  hideLoadMoreButton();
 
   try {
     const data = await getImagesByQuery(query, page);
@@ -45,18 +44,25 @@ form.addEventListener('submit', async event => {
         message:
           'Sorry, there are no images matching your search query. Please try again!',
       });
+      hideLoadMoreButton();
     } else {
-      setTimeout(() => {
-        createGallery(data.hits);
+      createGallery(data.hits);
+      if (totalHits <= 15) {
+        hideLoadMoreButton();
+        iziToast.info({
+          title: 'Info',
+          message: "We're sorry, but you've reached the end of search result.",
+        });
+      } else {
         showLoadMoreButton();
-        hideLoader();
-      }, 1000);
+      }
     }
   } catch (error) {
     iziToast.error({
       title: 'Error',
       message: 'Something went wrong. Try again later.',
     });
+    hideLoadMoreButton();
   } finally {
     hideLoader();
   }
@@ -69,27 +75,25 @@ loadMoreBtn.addEventListener('click', async () => {
 
   try {
     const data = await getImagesByQuery(query, page);
-
-    setTimeout(() => {
-      createGallery(data.hits);
-      const { height } = document
-        .querySelector('.gallery-item')
-        .getBoundingClientRect();
+    createGallery(data.hits);
+    const firstNewItem = document.querySelector('.gallery-item:last-child');
+    if (firstNewItem) {
+      const { height } = firstNewItem.getBoundingClientRect();
       window.scrollBy({ top: height * 2, behavior: 'smooth' });
-      showLoadMoreButton();
-      hideLoader();
-    }, 1000);
-
+    }
     if (page * 15 >= totalHits) {
       hideLoadMoreButton();
       iziToast.info({
         title: 'Info',
         message: "We're sorry, but you've reached the end of search result.",
       });
+    } else {
+      showLoadMoreButton();
     }
   } catch (error) {
     iziToast.error({ title: 'Error', message: 'Something went wrong.' });
+    hideLoadMoreButton();
   } finally {
-    // hideLoader теперь вызывается после показа галереи
+    hideLoader();
   }
 });
